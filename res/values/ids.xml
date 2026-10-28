@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="k_scale"/>
+    <item type="id" name="k_thumb"/>
+    <item type="id" name="k_file"/>
+</resources>
