@@ -9,7 +9,7 @@ public class IconDataTest {
         for (int i = 0; i < icons.length; i++) {
             StringBuilder sb = new StringBuilder("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='#000'>");
             for (IconData.Layer l : icons[i]) {
-                sb.append("<path opacity='").append(l.alpha / 255f).append("' d='");
+                sb.append("<path opacity='").append(l.alpha / 255f).append(l.stroke ? "' fill='none' stroke='#000' stroke-width='21.333' stroke-linecap='round' stroke-linejoin='round" : "").append("' d='");
                 int j = 0;
                 for (byte op : l.ops) {
                     switch (op) {

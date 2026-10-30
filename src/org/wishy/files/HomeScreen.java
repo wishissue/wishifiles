@@ -19,10 +19,8 @@ public class HomeScreen extends Screen {
         // header: wordmark on the left, a permission nudge on the right when access is missing
         LinearLayout head = UI.hbox();
         head.setPadding(g, g, g, UI.dp(14));
-        ImageView logo = new ImageView(a); logo.setImageResource(R.drawable.logo); logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        head.addView(logo, new LinearLayout.LayoutParams(UI.dp(36), UI.dp(36)));
-        LinearLayout nm = UI.vbox(); nm.setPadding(UI.dp(12), 0, 0, 0);
-        nm.addView(UI.tv("Wishi Files", 22, true, Theme.c(Theme.ON_BG)));
+        LinearLayout nm = UI.vbox();
+        nm.addView(UI.brand("Wishi Files", 26, Theme.c(Theme.P)));
         head.addView(nm, new LinearLayout.LayoutParams(0, -2, 1f));
         final boolean access = Storage.hasAccess();
         if (!access && !narrow) head.addView(UI.chip(Icons.WARN, "Allow file access", false, new UI.Act() { @Override public void run() { Storage.request(a); } }));
@@ -70,7 +68,7 @@ public class HomeScreen extends Screen {
         Tiles.Tile ap = Tiles.make(Prio.M, Tiles.QUIET, "Theme", Theme.labels[Theme.pal] + "  \u00b7  " + Theme.MODES[Theme.mode]).icon(Icons.TUNE).arrow();
         ap.onTap(new UI.Act() { @Override public void run() { a.push(new ThemeScreen()); } });
         grid.add(ap, narrow ? 2 : 4, 1);
-        Tiles.Tile ab = Tiles.make(Prio.M, Tiles.QUIET, "About", "Version 1.3.2").icon(Icons.INFO).arrow();
+        Tiles.Tile ab = Tiles.make(Prio.M, Tiles.QUIET, "About", "Version 1.4.0").icon(Icons.INFO).arrow();
         ab.onTap(new UI.Act() { @Override public void run() { a.push(new AboutScreen()); } });
         grid.add(ab, narrow ? 2 : 4, 1);
 

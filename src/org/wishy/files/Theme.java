@@ -17,16 +17,17 @@ public final class Theme {
     public static int pal, mode;
     public static float density = 1f, scale = 1f;
     static int wPx = 1920, hPx = 1080;
-    public static Typeface reg = Typeface.DEFAULT, semi = Typeface.DEFAULT_BOLD;
+    public static Typeface reg = Typeface.DEFAULT, semi = Typeface.DEFAULT_BOLD, brand = Typeface.DEFAULT_BOLD;
     static SharedPreferences sp;
 
     public static void init(Context c) {
         measure(c);
         sp = c.getSharedPreferences("wishi", Context.MODE_PRIVATE);
         try {
-            reg = Typeface.createFromAsset(c.getAssets(), "p_regular.ttf");
-            semi = Typeface.createFromAsset(c.getAssets(), "p_semibold.ttf");
+            reg = Typeface.createFromAsset(c.getAssets(), "pj_regular.ttf");
+            semi = Typeface.createFromAsset(c.getAssets(), "pj_semibold.ttf");
         } catch (Throwable ignored) { }
+        try { brand = Typeface.createFromAsset(c.getAssets(), "bagel.ttf"); } catch (Throwable ignored) { brand = semi; }
         try {
             InputStream is = c.getAssets().open("themes.bin");
             DataInputStream d = new DataInputStream(is);
@@ -39,10 +40,26 @@ public final class Theme {
                 for (int m = 0; m < 4; m++) for (int k = 0; k < 20; k++) cols[i][m][k] = d.readInt();
             }
             is.close();
+            wishIssue();
             for (int i = 0; i < n; i++) { cols[i][2] = dusk(cols[i][0]); cols[i][3] = amoled(cols[i][0]); }
         } catch (Throwable t) { throw new RuntimeException(t); }
         pal = Math.min(sp.getInt("pal", 0), ids.length - 1);
-        mode = Math.min(sp.getInt("mode", 0), 3);
+        // first run: follow the system. TVs are dark unless the system says otherwise.
+        int ui = c.getResources().getConfiguration().uiMode;
+        boolean tv = (ui & android.content.res.Configuration.UI_MODE_TYPE_MASK) == android.content.res.Configuration.UI_MODE_TYPE_TELEVISION;
+        boolean night = (ui & android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        mode = Math.min(sp.getInt("mode", tv || night ? 0 : 1), 3);
+    }
+
+    /** The default palette (index 0) follows the WishIssue design tokens: blue-led, with the light page #E6F1FF and a near-black navy dark page. */
+    private static void wishIssue() {
+        labels[0] = "WishIssue Blue"; seeds[0] = 0xFF1560D4;
+        //                P         ON_P      PC        ON_PC     S         SC        ON_SC     T         BG        ON_BG
+        //                SURF      ON_SURF   SV        ON_SV     OUT       OUTV      ERR       CONT      CONT_H    CONT_L
+        cols[0][1] = new int[]{0xFF1560D4, 0xFFFFFFFF, 0xFFD6E4FF, 0xFF0A2D6B, 0xFF4A5D7C, 0xFFDCE6F7, 0xFF14233F, 0xFF0F6B7A, 0xFFE6F1FF, 0xFF101828,
+                0xFFE6F1FF, 0xFF101828, 0xFFE8EEF9, 0xFF536176, 0xFF8A97AD, 0xFFD4DEED, 0xFFBA1A1A, 0xFFFFFFFF, 0xFFF3F7FF, 0xFFF8FAFF};
+        cols[0][0] = new int[]{0xFFA8C8FF, 0xFF082C63, 0xFF17408A, 0xFFD6E4FF, 0xFFB9C6E0, 0xFF2A3550, 0xFFD9E3F9, 0xFF8FD0DD, 0xFF080B12, 0xFFF1F4FB,
+                0xFF080B12, 0xFFF1F4FB, 0xFF182235, 0xFFB0BCD0, 0xFF6C7B95, 0xFF303B4F, 0xFFFFB4AB, 0xFF111725, 0xFF182235, 0xFF0D121D};
     }
 
     static int mix(int a, int b, float t) {

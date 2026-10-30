@@ -10,12 +10,12 @@ import android.widget.*;
 /**
  * The tile: one tonal rounded surface with a glyph, a title and an optional subtitle / gauge. Every screen is built from these,
  * so Home, Files, Transfer, Install and About share the same shapes, colours and motion.
- * Tones are Material 3 containers from the active theme: Hero (primary container) > Second (secondary container) >
- * Neutral (surface high) > Quiet (surface), and Active (solid primary) for something that is switched on.
+ * Hero is the primary container, Active is solid primary (something switched on), Warn is an error tint, and everything else
+ * (Second, Neutral, Quiet) is a calm surface with a hairline outline.
  */
 final class Tiles {
     static final int HERO = 0, SECOND = 1, NEUTRAL = 2, QUIET = 3, ACTIVE = 4, WARN = 5;
-    static final float[] TITLE = {13f, 16.5f, 21f, 27f}, SUB = {11.5f, 12.5f, 13.5f, 15f}, RAD = {20f, 24f, 30f, 34f};
+    static final float[] TITLE = {13f, 16.5f, 21f, 27f}, SUB = {11.5f, 12.5f, 13.5f, 15f}, RAD = {16f, 20f, 26f, 30f};
     static final int[] PAD = {10, 14, 18, 22};
 
     static boolean narrow() { return Theme.wDp() < 720; }
@@ -23,22 +23,21 @@ final class Tiles {
     static int bg(int k) {
         switch (k) {
             case HERO: return Theme.c(Theme.PC);
-            case SECOND: return Theme.c(Theme.SC);
-            case NEUTRAL: return Theme.c(Theme.CONT_H);
             case ACTIVE: return Theme.c(Theme.P);
             case WARN: return Theme.over(Theme.c(Theme.ERR), Theme.c(Theme.CONT), 0.22f);
             default: return Theme.c(Theme.CONT);
         }
     }
+    /** Calm surfaces (everything except Hero, Active and Warn) get a hairline outline instead of extra tone. */
+    static int border(int k) { return k == HERO || k == ACTIVE || k == WARN ? 0 : Theme.c(Theme.OUTV); }
     static int fg(int k) {
         switch (k) {
             case HERO: return Theme.c(Theme.ON_PC);
-            case SECOND: return Theme.c(Theme.ON_SC);
             case ACTIVE: return Theme.c(Theme.ON_P);
             default: return Theme.c(Theme.ON_SURF);
         }
     }
-    static int sub(int k) { return k == ACTIVE ? Theme.alpha(Theme.c(Theme.ON_P), 0.82f) : k == HERO || k == SECOND ? Theme.alpha(fg(k), 0.78f) : Theme.c(Theme.ON_SV); }
+    static int sub(int k) { return k == ACTIVE ? Theme.alpha(Theme.c(Theme.ON_P), 0.82f) : k == HERO ? Theme.alpha(fg(k), 0.78f) : Theme.c(Theme.ON_SV); }
     static int glyphBg(int k) { return k == ACTIVE ? Theme.c(Theme.ON_P) : k == QUIET ? Theme.c(Theme.PC) : k == WARN ? Theme.c(Theme.ERR) : Theme.c(Theme.P); }
     static int glyphFg(int k) { return k == ACTIVE ? Theme.c(Theme.P) : k == QUIET ? Theme.c(Theme.ON_PC) : k == WARN ? Theme.c(Theme.BG) : Theme.c(Theme.ON_P); }
     static int folderCol(int k) { return k == ACTIVE ? Theme.c(Theme.ON_P) : k == QUIET ? Theme.over(Theme.c(Theme.P), Theme.c(Theme.ON_SV), 0.55f) : Theme.c(Theme.P); }
@@ -102,7 +101,7 @@ final class Tiles {
                 View fill = new View(App.ctx); box.addView(fill, new LinearLayout.LayoutParams(1, 0, 1f));
                 box.addView(text, new LinearLayout.LayoutParams(-1, -2));
             }
-            setBackground(UI.tileSel(bg(kind), RAD[size]));
+            setBackground(UI.tileSel(bg(kind), RAD[size], border(kind)));
             UI.focusable(this, size == Prio.XL ? 1.025f : size == Prio.L ? 1.04f : 1.06f);
         }
 
@@ -131,7 +130,7 @@ final class Tiles {
             int pad = Math.round(g * 0.2f);
             iconV.setPadding(pad, pad, pad, pad);
             iconBox.addView(iconV, new FrameLayout.LayoutParams(-1, -1));
-            iconBox.setBackground(UI.rr(glyphBg(kind), Math.max(11, glyphDp(size, horiz) * 0.3f)));
+            iconBox.setBackground(UI.rr(glyphBg(kind), Math.max(11, glyphDp(size, horiz) * 0.28f)));
             addGlyph(iconBox, g);
             return this;
         }
@@ -165,9 +164,9 @@ final class Tiles {
             if (size == Prio.S || (size == Prio.M && narrow())) return this;   // no room beside the text on a phone
             int d = UI.dp(size == Prio.M ? 30 : 36);
             FrameLayout a = new FrameLayout(App.ctx);
-            a.setBackground(UI.rr(Theme.alpha(fg(kind), 0.12f), 40));
+            a.setBackground(UI.rr(Theme.alpha(fg(kind), 0.10f), 11));
             arrow = new Icons.IconView(App.ctx, Icons.CHEVRON, fg(kind));
-            int pd = UI.dp(5);
+            int pd = UI.dp(6);
             arrow.setPadding(pd, pd, pd, pd);
             a.addView(arrow, new FrameLayout.LayoutParams(-1, -1));
             int m = UI.dp(PAD[size] - 2 < 8 ? 8 : PAD[size] - 2);
@@ -200,11 +199,11 @@ final class Tiles {
         /** Re-tone the tile in place (e.g. Transfer switching on). */
         void kind(int k) {
             kind = k;
-            setBackground(UI.tileSel(bg(k), RAD[size]));
+            setBackground(UI.tileSel(bg(k), RAD[size], border(k)));
             title.setTextColor(fg(k)); subTv.setTextColor(sub(k));
-            if (iconBox != null) { iconBox.setBackground(UI.rr(glyphBg(k), Math.max(11, glyphDp(size, horiz) * 0.3f))); iconV.set(iconId, glyphFg(k)); }
+            if (iconBox != null) { iconBox.setBackground(UI.rr(glyphBg(k), Math.max(11, glyphDp(size, horiz) * 0.28f))); iconV.set(iconId, glyphFg(k)); }
             if (folder != null) folder.set(folderCol(k), folder.isEmpty() ? 0 : 1);
-            if (arrow != null) { arrow.set(Icons.CHEVRON, fg(k)); arrowBox.setBackground(UI.rr(Theme.alpha(fg(k), 0.12f), 40)); }
+            if (arrow != null) { arrow.set(Icons.CHEVRON, fg(k)); arrowBox.setBackground(UI.rr(Theme.alpha(fg(k), 0.10f), 11)); }
             if (meter != null) meter.colors(k == ACTIVE ? Theme.c(Theme.ON_P) : Theme.c(Theme.P), Theme.alpha(fg(k), 0.16f));
         }
 
@@ -236,7 +235,7 @@ final class Tiles {
         LinearLayout t = new LinearLayout(App.ctx);
         t.setOrientation(LinearLayout.HORIZONTAL); t.setGravity(Gravity.CENTER_VERTICAL);
         t.setPadding(UI.dp(14), UI.dp(10), UI.dp(14), UI.dp(10));
-        t.setBackground(UI.rr(Theme.c(Theme.CONT), 22));
+        t.setBackground(UI.tileSel(Theme.c(Theme.CONT), 22, Theme.c(Theme.OUTV)));
         View ic = UI.iconTile(icon, 40, Theme.c(Theme.PC), Theme.c(Theme.ON_PC));
         t.addView(ic);
         LinearLayout c = UI.vbox(); c.setPadding(UI.dp(12), 0, 0, 0);

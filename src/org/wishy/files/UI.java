@@ -27,10 +27,13 @@ public final class UI {
 
     public static int dp(float v) { return Theme.dp(v); }
 
+    /** One shape scale for the whole app: small radii stay as asked, large ones are tightened so surfaces read as confident rounded rectangles, not blobs. */
+    public static float shape(float rdp) { return rdp <= 14f ? rdp : 14f + (rdp - 14f) * 0.62f; }
+
     public static GradientDrawable rr(int color, float rdp) {
         GradientDrawable g = new GradientDrawable();
         g.setColor(color);
-        g.setCornerRadius(dp(rdp));
+        g.setCornerRadius(dp(shape(rdp)));
         return g;
     }
 
@@ -56,15 +59,20 @@ public final class UI {
     }
 
     /** Surface for tiles: keeps its own colour when focused and adds a clear ring instead (tiles come in many tones). */
-    public static Drawable tileSel(int bg, float rdp) {
+    public static Drawable tileSel(int bg, float rdp) { return tileSel(bg, rdp, 0); }
+
+    /** [border] (0 = none) draws a hairline around calm surfaces instead of stacking elevation and tone. */
+    public static Drawable tileSel(int bg, float rdp, int border) {
         StateListDrawable s = new StateListDrawable();
         GradientDrawable f = rr(bg, rdp);
-        f.setStroke(dp(3.5f), Theme.c(Theme.ON_BG));
+        f.setStroke(dp(3.5f), bg == Theme.c(Theme.P) ? Theme.c(Theme.ON_BG) : Theme.c(Theme.P));
         GradientDrawable a = rr(Theme.over(Theme.c(Theme.P), bg, 0.30f), rdp);
         a.setStroke(dp(3), Theme.c(Theme.P));
         s.addState(new int[]{android.R.attr.state_focused}, f);
         s.addState(new int[]{android.R.attr.state_activated}, a);
-        s.addState(new int[]{}, rr(bg, rdp));
+        GradientDrawable n = rr(bg, rdp);
+        if (border != 0) n.setStroke(dp(1), border);
+        s.addState(new int[]{}, n);
         s.setEnterFadeDuration(110);
         s.setExitFadeDuration(160);
         return ripple(s, rdp);
@@ -77,6 +85,13 @@ public final class UI {
         t.setTextColor(color);
         t.setTypeface(bold ? Theme.semi : Theme.reg);
         t.setIncludeFontPadding(false);
+        return t;
+    }
+
+    /** Short brand moments only (wordmark, About title): Bagel Fat One, never body text. */
+    public static TextView brand(String s, float sp, int color) {
+        TextView t = tv(s, sp, false, color);
+        t.setTypeface(Theme.brand);
         return t;
     }
 
@@ -117,7 +132,7 @@ public final class UI {
         final float back = x.isFocused() ? eff(x) : 1f;
         x.animate().setStartDelay(0).scaleX(back * 0.955f).scaleY(back * 0.955f).setDuration(70).setInterpolator(EASE).withEndAction(new Runnable() {
             @Override public void run() {
-                x.animate().setStartDelay(0).scaleX(back).scaleY(back).setDuration(220).setInterpolator(new OvershootInterpolator(2.4f)).start();
+                x.animate().setStartDelay(0).scaleX(back).scaleY(back).setDuration(220).setInterpolator(new OvershootInterpolator(1.1f)).start();
             }
         }).start();
     }
@@ -169,7 +184,7 @@ public final class UI {
     /** Tile that follows its parent's focus: on focus it flips to [focusBg] / [focusFg] (pass 0 to keep it fixed). */
     public static View iconTile(int icon, int sizeDp, int bg, int fg, int focusBg, int focusFg) {
         FrameLayout f = new FrameLayout(App.ctx);
-        float rad = sizeDp * 0.32f;
+        float rad = sizeDp * 0.3f;
         Icons.IconView iv;
         if (focusBg != 0) {
             StateListDrawable s = new StateListDrawable();
@@ -203,10 +218,11 @@ public final class UI {
     /** Round icon-only button. [filled] = primary, otherwise a tonal (secondary container) circle. */
     public static View iconBtn(int icon, boolean filled, final Act a) {
         FrameLayout f = new FrameLayout(App.ctx);
-        f.setBackground(sel(filled ? Theme.c(Theme.P) : Theme.c(Theme.SC), 28));
+        f.setBackground(sel(filled ? Theme.c(Theme.P) : Theme.c(Theme.SC), 16));
         Icons.IconView iv = new Icons.IconView(App.ctx, icon, filled ? Theme.c(Theme.ON_P) : Theme.c(Theme.ON_SC));
         f.addView(iv, new FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER));
         f.setLayoutParams(lp(dp(50), dp(50)));
+        f.setContentDescription(Icons.label(icon));
         focusable(f, 1.08f);
         if (a != null) click(f, a);
         return f;
@@ -215,10 +231,11 @@ public final class UI {
     /** App-bar action: no resting container, just the glyph; the focus ring and ripple appear on demand. */
     public static View barBtn(int icon, final Act a) {
         FrameLayout f = new FrameLayout(App.ctx);
-        f.setBackground(sel(0x00000000, 26));
+        f.setBackground(sel(0x00000000, 14));
         Icons.IconView iv = new Icons.IconView(App.ctx, icon, Theme.c(Theme.ON_SV));
         f.addView(iv, new FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER));
         f.setLayoutParams(lp(dp(48), dp(48)));
+        f.setContentDescription(Icons.label(icon));
         focusable(f, 1.1f);
         if (a != null) click(f, a);
         return f;
@@ -273,7 +290,6 @@ public final class UI {
     /** Section label: small, primary-coloured, with a little air above. */
     public static TextView section(String s) {
         TextView t = tv(s, 13, true, Theme.c(Theme.P));
-        t.setLetterSpacing(0.04f);
         t.setPadding(dp(6), dp(22), 0, dp(8));
         return t;
     }
@@ -296,7 +312,7 @@ public final class UI {
         c.setPadding(dp(icon >= 0 ? 16 : 22), dp(11), dp(22), dp(11));
         int bg = kind == 0 ? Theme.c(Theme.P) : kind == 1 ? Theme.c(Theme.SC) : 0x00000000;
         int fg = kind == 0 ? Theme.c(Theme.ON_P) : kind == 1 ? Theme.c(Theme.ON_SC) : Theme.c(Theme.P);
-        c.setBackground(sel(bg, 26));
+        c.setBackground(sel(bg, 14));
         if (icon >= 0) {
             Icons.IconView iv = new Icons.IconView(App.ctx, icon, fg);
             c.addView(iv, new LinearLayout.LayoutParams(dp(22), dp(22)));
@@ -315,7 +331,7 @@ public final class UI {
     public static LinearLayout fab(int icon, String label, final Act a) {
         LinearLayout c = hbox();
         c.setPadding(dp(18), dp(15), dp(24), dp(15));
-        c.setBackground(sel(Theme.c(Theme.PC), 28));
+        c.setBackground(sel(Theme.c(Theme.PC), 20));
         Icons.IconView iv = new Icons.IconView(App.ctx, icon, Theme.c(Theme.ON_PC));
         c.addView(iv, new LinearLayout.LayoutParams(dp(24), dp(24)));
         c.addView(space(10, 1));
@@ -323,7 +339,7 @@ public final class UI {
         t.setSingleLine(true);
         c.addView(t);
         focusable(c, 1.06f);
-        final float rad = dp(28);
+        final float rad = dp(shape(20));
         c.setOutlineProvider(new ViewOutlineProvider() { @Override public void getOutline(View x, Outline o) { o.setRoundRect(0, 0, x.getWidth(), x.getHeight(), rad); } });
         c.setElevation(dp(6));
         if (a != null) click(c, a);
@@ -347,9 +363,9 @@ public final class UI {
     public static void popAll(ViewGroup g) {
         for (int i = 0; i < g.getChildCount(); i++) {
             final View v = g.getChildAt(i);
-            v.setAlpha(0f); v.setScaleX(0.88f); v.setScaleY(0.88f); v.setTranslationY(dp(16));
+            v.setAlpha(0f); v.setScaleX(0.94f); v.setScaleY(0.94f); v.setTranslationY(dp(12));
             v.animate().alpha(1f).scaleX(1f).scaleY(1f).translationY(0).setStartDelay(60 + Math.min(i, 12) * 45L).setDuration(420)
-                    .setInterpolator(new OvershootInterpolator(0.9f)).withEndAction(new Runnable() { @Override public void run() { v.animate().setStartDelay(0); } }).start();
+                    .setInterpolator(new OvershootInterpolator(0.4f)).withEndAction(new Runnable() { @Override public void run() { v.animate().setStartDelay(0); } }).start();
         }
     }
 

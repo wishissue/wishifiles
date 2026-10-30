@@ -20,7 +20,7 @@ Browse storage, send files to and from any phone over your home Wi-Fi, and inspe
 
 ![Android](https://img.shields.io/badge/Platform-Android%206%2B%20%7C%20Android%20TV-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Java](https://img.shields.io/badge/Made%20with-Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
-![Material 3](https://img.shields.io/badge/Material-3-E8704F?style=for-the-badge&logo=materialdesign&logoColor=white)
+![WishIssue design](https://img.shields.io/badge/Design-WishIssue-1560D4?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue?style=for-the-badge)
 
 </div>
@@ -42,7 +42,7 @@ Browse storage, send files to and from any phone over your home Wi-Fi, and inspe
   </tr>
 </table>
 
-<sub>These are design previews rendered from the app's real theme colours, font and icons. Swap in device screenshots when you have them.</sub>
+<sub>These previews predate the WishIssue redesign and show the old look. Replace them with device screenshots of the new UI.</sub>
 
 </div>
 
@@ -78,15 +78,17 @@ Most TV file managers are heavy, ad-supported or awkward with a remote, and movi
 - Installs through Android's PackageInstaller (Android always asks you to confirm) and explains failures in plain language
 
 ### Look and feel
-- Material 3 tonal tiles, Material Symbols icons, 45 colour themes in Dark, Light, Dusk and AMOLED
-- Staggered tile entrance, focus zoom and ring, animated storage gauges, ripples on touch
+- Shows up as a file chooser in other apps (Choose a file / Open from): pick a file in Wishi Files and it goes back to the app that asked, filtered to the file types that app accepts
+- WishIssue design system: blue-led colour tokens, Plus Jakarta Sans, a Bagel Fat One wordmark and Lucide icons. Follows the system light or dark setting on first run
+- 45 colour themes in Dark, Light, Dusk and AMOLED (WishIssue Blue is the default)
+- Calm surfaces with hairline outlines, staggered tile entrance, focus zoom and ring, animated storage gauges, ripples on touch
 
 ## Install
 
 1. Go to [Wishi Files Releases](https://github.com/wishissue/WishiFiles/releases).
 2. Download the latest APK.
 3. Move it to your Android TV or phone and open it. You may need to allow installs from the app you use to open the APK.
-4. On first launch, allow file access. Android 11 and newer asks for **All files access**. If your TV has no settings page for it, the app shows an `adb` command you can run once.
+4. On first launch, allow file access. Android 11 and newer opens the **All files access** page. If your TV has no such page (most Android TVs), the app shows the normal Android permission popup for photos, videos and music, then a dialog with the exact `adb` commands (including the TV's IP address) to unlock every folder once.
 
 ## Build from source
 
@@ -115,11 +117,11 @@ There is no Gradle. That keeps the build dependency-free and the APK tiny.
 
 ### Rebuild the icons
 
-Icons are Material Symbols Rounded, packed into one 22 KB asset.
+Icons are Lucide, packed into one 10 KB asset of stroked vector paths.
 
 ```bash
-npm i @material-symbols/svg-400
-python3 tools/build_icons.py node_modules/@material-symbols/svg-400/rounded
+npm i lucide-static
+python3 tools/build_icons.py node_modules/lucide-static/icons
 ```
 
 ## Privacy and security
@@ -167,9 +169,10 @@ Bug reports, compatibility testing and screenshots from real devices are welcome
 ## Credits
 
 - [Wishy Browser](https://github.com/wishissue/WishyBrowser): design language, themes and pages (GPL-3.0)
-- [Material Symbols](https://fonts.google.com/icons): icons (Apache-2.0)
+- [Lucide](https://lucide.dev): icons (ISC)
 - [Material Color Utilities](https://github.com/material-foundation/material-color-utilities): the colour themes (Apache-2.0)
-- [Poppins](https://fonts.google.com/specimen/Poppins): typeface (OFL-1.1)
+- [Plus Jakarta Sans](https://fonts.google.com/specimen/Plus+Jakarta+Sans): typeface (OFL-1.1)
+- [Bagel Fat One](https://fonts.google.com/specimen/Bagel+Fat+One): wordmark typeface (OFL-1.1)
 - Studied for behaviour only, no code copied: Fossify File Manager, Aurora Store, dropX, android-wifi-fileserver
 
 ## License

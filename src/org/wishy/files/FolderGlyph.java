@@ -4,6 +4,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.CornerPathEffect;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
@@ -11,7 +12,7 @@ import android.view.View;
 
 /**
  * A folder drawn with Canvas that tells you what is inside at a glance and opens when you open it.
- *  - empty folder: hollow, softly dimmed, no papers
+ *  - empty folder: a dotted outline with a faint fill, like a placeholder waiting for something; it lifts slightly when "opened"
  *  - folder with items: papers peek out of the top (1 to 3 depending on how full it is)
  *  - open fraction 0..1: the front flap swings down (perspective trapezoid) and the papers rise
  * Only transforms/paths are redrawn, and only while it animates.
@@ -25,6 +26,8 @@ public final class FolderGlyph extends View {
     private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF r = new RectF();
     private final Path path = new Path();
+    private Path outline;                 // silhouette of an empty folder (body + tab), built once on the 100 grid
+    private DashPathEffect dots;
 
     public FolderGlyph(Context c) { super(c); }
 
@@ -57,6 +60,33 @@ public final class FolderGlyph extends View {
 
     private static int mix(int a, int b, float t) { return Theme.over(b, a, t); }
 
+    /** Empty folder: one clean silhouette, dotted outline + faint fill, no cavity and no stacked translucent layers. */
+    private void drawEmpty(Canvas c, float o) {
+        if (outline == null) {
+            Path body = new Path(), tab = new Path();
+            body.addRoundRect(new RectF(7, 25, 93, 84), 10, 10, Path.Direction.CW);
+            tab.addRoundRect(new RectF(7, 14, 45, 38), 9, 9, Path.Direction.CW);
+            outline = new Path();
+            if (!outline.op(body, tab, Path.Op.UNION)) { outline.reset(); outline.addPath(body); outline.addPath(tab); }
+            dots = new DashPathEffect(new float[]{0.1f, 8.2f}, 0);
+        }
+        c.translate(0, -10f * Math.min(o, 1f));             // a gentle lift instead of a flap swing
+        p.setStyle(Paint.Style.FILL);
+        p.setPathEffect(null);
+        p.setColor(Theme.alpha(color, 0.12f + 0.06f * Math.min(o, 1f)));
+        c.drawPath(outline, p);
+        p.setStyle(Paint.Style.STROKE);
+        p.setStrokeCap(Paint.Cap.ROUND);
+        p.setStrokeJoin(Paint.Join.ROUND);
+        p.setStrokeWidth(4.6f);
+        p.setPathEffect(dots);
+        p.setColor(Theme.alpha(color, 0.85f));
+        c.drawPath(outline, p);
+        p.setPathEffect(null);
+        p.setStyle(Paint.Style.FILL);
+        if (emblem >= 0) Icons.draw(c, emblem, 33, 38f, 34, Theme.alpha(color, 0.6f));
+    }
+
     @Override protected void onDraw(Canvas c) {
         float w = getWidth(), h = getHeight(), s = Math.min(w, h) / 100f;
         if (s <= 0) return;
@@ -65,9 +95,10 @@ public final class FolderGlyph extends View {
         c.scale(s, s);
         boolean empty = items == 0;
         float o = open;
+        if (empty) { drawEmpty(c, o); c.restore(); return; }
         int main = color, black = 0xFF000000, white = 0xFFFFFFFF;
-        int back = mix(main, black, empty ? 0.10f : 0.24f);
-        int cavity = mix(main, black, 0.42f);
+        int back = mix(main, black, empty ? 0.08f : 0.20f);
+        int cavity = mix(main, black, 0.36f);
         int alphaMul = empty ? 0x8C : 0xFF;
         p.setStyle(Paint.Style.FILL);
         p.setPathEffect(null);
@@ -102,7 +133,7 @@ public final class FolderGlyph extends View {
         }
 
         // front flap: a trapezoid whose top edge drops and widens as it opens (a flap swinging toward you)
-        int front = mix(main, black, 0.10f * o);
+        int front = mix(main, black, 0.06f * o);
         p.setColor(Theme.alpha(front, alphaMul / 255f));
         p.setPathEffect(new CornerPathEffect(9));
         float topY = 42f + 24f * o, grow = 4.5f * o;
@@ -110,10 +141,6 @@ public final class FolderGlyph extends View {
         path.moveTo(6 - grow, topY); path.lineTo(94 + grow, topY); path.lineTo(94, 84); path.lineTo(6, 84); path.close();
         c.drawPath(path, p);
         p.setPathEffect(null);
-
-        // a soft highlight along the flap's top edge keeps it from looking flat
-        p.setColor(Theme.alpha(white, empty ? 0.10f : 0.18f));
-        r.set(10 - grow, topY + 1.5f, 90 + grow, topY + 4f); c.drawRoundRect(r, 1.6f, 1.6f, p);
 
         // emblem: printed on the flap, fades away as the flap drops
         if (emblem >= 0 && o < 0.8f) {

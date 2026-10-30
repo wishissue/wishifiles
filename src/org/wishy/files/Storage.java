@@ -22,17 +22,56 @@ public final class Storage {
         return App.ctx.checkSelfPermission("android.permission.READ_EXTERNAL_STORAGE") == PackageManager.PERMISSION_GRANTED;
     }
 
-    /** Ask for access: runtime permission on Android 6-10, "All files access" settings page on 11+. */
+    /** What Android lets an app ask for with a normal popup: storage on 6-12, photo/video/music access on 13+. */
+    static String[] runtimePerms() {
+        if (Build.VERSION.SDK_INT >= 33) return new String[]{"android.permission.READ_MEDIA_IMAGES", "android.permission.READ_MEDIA_VIDEO", "android.permission.READ_MEDIA_AUDIO"};
+        if (Build.VERSION.SDK_INT >= 30) return new String[]{"android.permission.READ_EXTERNAL_STORAGE"};
+        return new String[]{"android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"};
+    }
+
+    static boolean hasRuntime() {
+        for (String p : runtimePerms()) if (App.ctx.checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED) return true;
+        return false;
+    }
+
+    /** Start a settings screen without asking resolveActivity first: since Android 11 it can say "nobody handles this" for screens that do exist. */
+    private static boolean launch(MainActivity a, Intent i) {
+        try { a.startActivity(i); return true; } catch (Throwable t) { return false; }
+    }
+
+    /**
+     * Ask for access. Android 6-10: the normal popup. Android 11+: the "All files access" settings page; if the device has none
+     * (most Android TVs), fall back to the normal popup for media, and then explain the one-time adb step for everything else.
+     */
     public static void request(final MainActivity a) {
         if (Build.VERSION.SDK_INT >= 30) {
             Uri u = Uri.parse("package:" + a.getPackageName());
-            Intent i = new Intent("android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION", u);
-            if (i.resolveActivity(a.getPackageManager()) == null) i = new Intent("android.settings.MANAGE_ALL_FILES_ACCESS_PERMISSION");
-            if (i.resolveActivity(a.getPackageManager()) != null) { a.startActivity(i); return; }
-            Dlg.info("Allow file access", "This TV has no \"All files access\" screen. You can grant it from a computer once:\n\nadb shell appops set " + a.getPackageName() + " MANAGE_EXTERNAL_STORAGE allow\n\nThen reopen Wishi Files.");
+            if (launch(a, new Intent("android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION", u))) return;
+            if (launch(a, new Intent("android.settings.MANAGE_ALL_FILES_ACCESS_PERMISSION"))) return;
+            if (!hasRuntime()) { a.requestPermissions(runtimePerms(), 1); return; }
+            tvHelp(a);
         } else {
-            a.requestPermissions(new String[]{"android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"}, 1);
+            a.requestPermissions(runtimePerms(), 1);
         }
+    }
+
+    /** After the popup closed (allowed or not): if full access still isn't there, tell the person how to get it. */
+    static void afterRuntime(MainActivity a) {
+        if (Build.VERSION.SDK_INT >= 30 && !hasAccess()) tvHelp(a);
+    }
+
+    static void tvHelp(final MainActivity a) {
+        String ip = TransferServer.localIp();
+        String cmd = "adb shell appops set " + a.getPackageName() + " MANAGE_EXTERNAL_STORAGE allow";
+        String msg = "This device has no \"All files access\" screen, so Android can't show a popup for it."
+                + (hasRuntime() ? " Photos, videos and music are already allowed." : "")
+                + "\n\nTo open every folder, turn on Network debugging in the Developer options, then run this once from a computer on the same Wi-Fi:\n\n"
+                + (ip != null ? "adb connect " + ip + ":5555\n" : "") + cmd + "\n\nThen reopen Wishi Files.";
+        Dlg.make("Allow all files access").msg(msg)
+                .btn("App settings", false, new UI.Act() { @Override public void run() {
+                    if (!launch(a, new Intent("android.settings.APPLICATION_DETAILS_SETTINGS", Uri.parse("package:" + a.getPackageName())))) UI.toast("This device has no app settings screen");
+                } })
+                .btn("OK", true, null).show();
     }
 
     public static List<Root> roots() {

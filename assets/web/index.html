@@ -2,30 +2,28 @@
 <meta name="color-scheme" content="dark light"><meta name="referrer" content="no-referrer"><title>Wishi Files</title>
 <style nonce="{{NONCE}}">{{CSS}}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
-body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--on);min-height:100vh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+body{margin:0;font:15px/1.5 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--on);min-height:100vh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 main{max-width:720px;margin:0 auto;padding:22px 18px 60px}
 header{display:flex;align-items:center;gap:14px;margin:6px 0 22px}
-.logo{width:52px;height:52px;border-radius:17px;background:var(--pc);color:var(--onpc);display:grid;place-items:center;flex:none}
-h1{font-size:24px;margin:0;font-weight:700;letter-spacing:-.01em}.sub{color:var(--onsv);font-size:13.5px}
-.pill{margin-left:auto;font-size:12.5px;padding:6px 12px;border-radius:99px;background:var(--cth);color:var(--onsv);white-space:nowrap}
+h1{font-size:24px;margin:0;font-weight:800;letter-spacing:-.01em}.sub{color:var(--onsv);font-size:13.5px}
+.pill{margin-left:auto;font-weight:600;font-size:12.5px;padding:6px 12px;border-radius:99px;background:var(--cth);color:var(--onsv);white-space:nowrap}
 .pill.ok{background:var(--pc);color:var(--onpc)}.pill.bad{background:var(--err);color:#fff}
-.card{background:var(--ct);border-radius:28px;padding:20px;margin-bottom:16px}
-h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--p);margin:0 0 14px}
-.drop{border:2px dashed var(--out);border-radius:22px;padding:30px 16px;text-align:center;transition:.2s;cursor:pointer}.drop:focus-visible{outline:3px solid var(--p);outline-offset:3px}.card{animation:rise .4s cubic-bezier(.2,0,0,1) both}.card+.card{animation-delay:.07s}@keyframes rise{from{opacity:0;transform:translateY(10px)}}
-.drop.over{border-color:var(--p);background:var(--pc);color:var(--onpc);transform:scale(1.015)}
+.card{background:var(--ct);border:1px solid var(--out);border-radius:20px;padding:20px;margin-bottom:16px}
+h2{font-size:14px;font-weight:700;color:var(--p);margin:0 0 14px}
+.drop{border:2px dashed var(--out);border-radius:16px;padding:32px 16px;text-align:center;transition:.2s;cursor:pointer}.drop:focus-visible{outline:3px solid var(--p);outline-offset:3px}.card{animation:rise .4s cubic-bezier(.2,0,0,1) both}.card+.card{animation-delay:.07s}@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+.drop.over{border-color:var(--p);background:var(--pc);color:var(--onpc)}
 .drop b{display:block;font-size:17px;margin:8px 0 2px}
-button,.btn{font:inherit;font-weight:600;border:0;border-radius:99px;padding:11px 20px;background:var(--p);color:var(--onp);cursor:pointer;text-decoration:none;display:inline-block;transition:transform .15s}
-button:active,.btn:active{transform:scale(.96)}button.ghost{background:var(--cth);color:var(--on)}
+button,.btn{font:inherit;font-weight:600;border:0;border-radius:14px;min-height:44px;padding:11px 20px;background:var(--p);color:var(--onp);cursor:pointer;text-decoration:none;display:inline-block;transition:transform .15s}
+button:active,.btn:active{transform:scale(.96)}button:focus-visible,.btn:focus-visible{outline:3px solid var(--p);outline-offset:3px}@media (hover:hover){button:hover,.btn:hover{filter:brightness(1.08)}}button.ghost{background:var(--cth);color:var(--on)}
 .item{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--cth)}.item:first-of-type{border-top:0}
 .info{flex:1;min-width:0}.name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta{font-size:12.5px;color:var(--onsv)}
 .bar{height:6px;border-radius:9px;background:var(--cth);margin-top:7px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:var(--p);border-radius:9px;transition:width .2s}
 .err{color:var(--err)}.mt{margin-top:8px}.c{text-align:center}.empty{color:var(--onsv);text-align:center;padding:10px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body><main>
-<header><div class="logo"><svg width="30" height="30" viewBox="0 -960 960 960" fill="currentColor"><path d="m194-323 100 100q9 9 9 21t-9 21q-9 9-21 9t-21-9L101-332q-5-5-7-10t-2-11q0-6 2-11t7-10l151-151q9-9 21-9t21 9q9 9 9 21t-9 21L194-383h286q13 0 21.5 8.5T510-353q0 13-8.5 21.5T480-323H194Zm572-254H480q-13 0-21.5-8.5T450-607q0-13 8.5-21.5T480-637h286L666-737q-9-9-9-21t9-21q9-9 21-9t21 9l151 151q5 5 7 10t2 11q0 6-2 11t-7 10L708-435q-9 9-21 9t-21-9q-9-9-9-21t9-21l100-100Z"/></svg></div>
-<div><h1>Wishi Files</h1><div class="sub">Connected to {{DEVICE}}</div></div><span id="st" class="pill">Connecting…</span></header>
+<header><div><h1>Wishi Files</h1><div class="sub">Connected to {{DEVICE}}</div></div><span id="st" class="pill" role="status" aria-live="polite">Connecting…</span></header>
 <section class="card"><h2>Send to TV</h2>
-<div id="drop" class="drop" tabindex="0" role="button"><svg width="44" height="44" viewBox="0 -960 960 960" fill="currentColor"><path d="M220-160q-24 0-42-18t-18-42v-113q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v113h520v-113q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v113q0 24-18 42t-42 18H220Zm230-524-99 99q-8.8 9-20.9 8.5-12.1-.5-21.49-9.5-8.61-9-8.61-21.5t9-21.5l150-150q5-5 10.13-7 5.14-2 11-2 5.87 0 10.87 2 5 2 10 7l151 151q9 9 9 21t-8.61 21q-9.39 9-21.89 9t-21.5-9l-99-98v341q0 12.75-8.68 21.37-8.67 8.63-21.5 8.63-12.82 0-21.32-8.63-8.5-8.62-8.5-21.37v-341Z"/></svg><b>Drop files here</b><span class="sub">or tap to choose. Big files resume if Wi-Fi drops.</span></div>
+<div id="drop" class="drop" tabindex="0" role="button"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg><b>Drop files here</b><span class="sub">or tap to choose. Big files resume if Wi-Fi drops.</span></div>
 <input id="pick" type="file" multiple hidden><div id="up" class="mt"></div></section>
 <section class="card"><h2>From TV</h2><div id="dl"><div class="empty">Nothing shared yet. On the TV, choose “Share on network” for a file.</div></div></section>
 <p class="sub c">Private, local-only transfer. Nothing leaves your network.</p></main>

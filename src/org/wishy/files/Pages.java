@@ -61,14 +61,11 @@ class AboutScreen extends Screen {
         LinearLayout c = Pages.col();
         // hero
         LinearLayout h = UI.hbox(); h.setPadding(UI.dp(22), UI.dp(22), UI.dp(22), UI.dp(22)); h.setBackground(UI.rr(Theme.c(Theme.PC), 34));
-        FolderGlyph fg = new FolderGlyph(a, Theme.c(Theme.P), 12);
-        h.addView(fg, new LinearLayout.LayoutParams(UI.dp(92), UI.dp(92)));
-        LinearLayout t = UI.vbox(); t.setPadding(UI.dp(20), 0, 0, 0);
-        t.addView(UI.tv("Wishi Files", 26, true, Theme.c(Theme.ON_PC)));
-        TextView v = UI.tv("Version 1.3.2  \u00b7  GPL-3.0", 14, false, Theme.alpha(Theme.c(Theme.ON_PC), 0.8f)); v.setPadding(0, UI.dp(4), 0, 0); t.addView(v);
+        LinearLayout t = UI.vbox();
+        t.addView(UI.brand("Wishi Files", 30, Theme.c(Theme.ON_PC)));
+        TextView v = UI.tv("Version 1.4.0  \u00b7  GPL-3.0", 14, false, Theme.alpha(Theme.c(Theme.ON_PC), 0.8f)); v.setPadding(0, UI.dp(4), 0, 0); t.addView(v);
         h.addView(t, new LinearLayout.LayoutParams(0, -2, 1f));
         Pages.add(c, h);
-        final FolderGlyph fgf = fg; fg.postDelayed(new Runnable() { public void run() { fgf.openTo(0.6f); } }, 500);
         TileGrid g = new TileGrid(a); g.cols = 4; g.gap = UI.dp(10); g.rowH = UI.dp(Tiles.narrow() ? 100 : 84);
         add(g, Icons.SHIELD, "Privacy", new UI.Act() { @Override public void run() { a.push(new PrivacyScreen()); } });
         add(g, Icons.CODE, "Credits", new UI.Act() { @Override public void run() { a.push(new CreditsScreen()); } });
@@ -86,25 +83,30 @@ class AboutScreen extends Screen {
 
 class CreditsScreen extends Screen {
     static final String[][] C = {
-        {"Wishy Browser", "Design language, themes and pages reused from the original", "GPL-3.0", "https://github.com/wishissue/WishyBrowser"},
-        {"Material Color Utilities", "Generated the 45 colour themes (via Wishy Browser)", "Apache-2.0", "https://github.com/material-foundation/material-color-utilities"},
-        {"Orion Store", "Design inspiration and theme seed colours", "GPL-3.0", "https://github.com/RookieEnough/Orion-Store"},
-        {"Poppins", "Typeface by Indian Type Foundry (Latin subset)", "OFL-1.1", "https://fonts.google.com/specimen/Poppins"},
-        {"Material Symbols", "All icons in the app and on the transfer page (Rounded, filled and outline)", "Apache-2.0", "https://fonts.google.com/icons"},
-        {"Fossify File Manager", "Studied for file-browser behaviour. No code copied", "GPL-3.0", "https://github.com/FossifyOrg/File-Manager"},
-        {"Aurora Store", "Studied for PackageInstaller handling. No code copied", "GPL-3.0", "https://github.com/whyorean/AuroraStore"},
-        {"dropX", "Studied for the QR handshake and threat model. No code copied", "MIT", "https://github.com/flu1d3v/dropX"},
-        {"android-wifi-fileserver", "Studied for HTTP range and upload handling. No code copied", "MIT", "https://github.com/rafiibrahim8/android-wifi-fileserver"},
-        {"QR Code specification", "ISO/IEC 18004. The encoder was written from the spec", "n/a", "https://www.iso.org/standard/62021.html"},
+        {"Wishy Browser", "Design language, themes and pages reused from the original", "GPL-3.0", "https://github.com/wishissue/WishyBrowser", "GLOBE"},
+        {"Material Color Utilities", "Generated the 45 colour themes (via Wishy Browser)", "Apache-2.0", "https://github.com/material-foundation/material-color-utilities", "TUNE"},
+        {"Orion Store", "Design inspiration and theme seed colours", "GPL-3.0", "https://github.com/RookieEnough/Orion-Store", "HEART"},
+        {"Plus Jakarta Sans", "Typeface by Tokotype (Latin subset)", "OFL-1.1", "https://fonts.google.com/specimen/Plus+Jakarta+Sans", "DOC"},
+        {"Lucide", "All icons in the app and on the transfer page", "ISC", "https://lucide.dev", "IMAGE"},
+        {"Bagel Fat One", "Brand typeface for the wordmark (Latin letters subset)", "OFL-1.1", "https://fonts.google.com/specimen/Bagel+Fat+One", "DOC"},
+        {"Fossify File Manager", "Studied for file-browser behaviour. No code copied", "GPL-3.0", "https://github.com/FossifyOrg/File-Manager", "CODE"},
+        {"Aurora Store", "Studied for PackageInstaller handling. No code copied", "GPL-3.0", "https://github.com/whyorean/AuroraStore", "CODE"},
+        {"dropX", "Studied for the QR handshake and threat model. No code copied", "MIT", "https://github.com/flu1d3v/dropX", "CODE"},
+        {"android-wifi-fileserver", "Studied for HTTP range and upload handling. No code copied", "MIT", "https://github.com/rafiibrahim8/android-wifi-fileserver", "CODE"},
+        {"QR Code specification", "ISO/IEC 18004. The encoder was written from the spec", "n/a", "https://www.iso.org/standard/62021.html", "INFO"},
     };
+    /** Icon for a credit row by name; anything unknown falls back to a generic one instead of failing. */
+    static int icon(String n) {
+        if ("GLOBE".equals(n)) return Icons.GLOBE; if ("TUNE".equals(n)) return Icons.TUNE; if ("HEART".equals(n)) return Icons.HEART;
+        if ("DOC".equals(n)) return Icons.DOC; if ("IMAGE".equals(n)) return Icons.IMAGE; if ("CODE".equals(n)) return Icons.CODE;
+        return Icons.INFO;
+    }
     @Override View build() {
         LinearLayout c = Pages.col();
-        int[] ci = {Icons.GLOBE, Icons.TUNE, Icons.HEART, Icons.DOC, Icons.IMAGE, Icons.CODE, Icons.CODE, Icons.CODE, Icons.CODE, Icons.INFO};
-        int ix = 0;
         for (final String[] x : C) {
             TextView lic = UI.tv(x[2], 12.5f, true, Theme.c(Theme.ON_SC));
             lic.setPadding(UI.dp(12), UI.dp(6), UI.dp(12), UI.dp(6)); lic.setBackground(UI.rr(Theme.c(Theme.SC), 14));
-            Pages.add(c, UI.rowPlain(ci[ix++], x[0], x[1], lic, new UI.Act() { @Override public void run() { a.open(x[3]); } }));
+            Pages.add(c, UI.rowPlain(icon(x[4]), x[0], x[1], lic, new UI.Act() { @Override public void run() { a.open(x[3]); } }));
         }
         UI.reveal(c);
         return UI.scaffold("Credits", null, UI.scroll(c), new UI.Act() { @Override public void run() { a.pop(); } });

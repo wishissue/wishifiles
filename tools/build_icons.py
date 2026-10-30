@@ -1,40 +1,41 @@
 #!/usr/bin/env python3
-"""Builds assets/icons.bin from Material Symbols (Rounded, weight 400, Apache-2.0, https://fonts.google.com/icons).
+"""Builds assets/icons.bin from Lucide (ISC licence, https://lucide.dev), the icon family of the WishIssue design system.
 
-    npm i @material-symbols/svg-400     (in any scratch dir)
-    python3 tools/build_icons.py <path to node_modules/@material-symbols/svg-400/rounded> [out.bin]
+    npm i lucide-static                 (in any scratch dir)
+    python3 tools/build_icons.py <path to node_modules/lucide-static/icons> [out.bin]
 
-Each icon is one filled layer on a 256 grid (Material's 960 grid is rescaled). Filled glyphs use the "-fill" file, outline glyphs the plain one.
-Paths are flattened to absolute M/L/Q/C/Z and written as zig-zag varint deltas in 1/16 units, so the app needs no SVG parser at runtime.
+Lucide icons are 24x24 outlines drawn with a 2 unit round-capped stroke. They are rescaled to a 256 grid and stored as stroked layers,
+so the app draws them with a round Paint stroke (no SVG parser at runtime, and the weight stays crisp at any size).
+Paths are flattened to absolute M/L/Q/C/Z and written as zig-zag varint deltas in 1/16 units.
 
-File format:  u16 iconCount, then per icon: u8 layers, then per layer: u8 alpha, u16 opCount, opCount op bytes
+File format:  u16 iconCount, then per icon: u8 layers, then per layer: u8 alpha, u8 style (0 fill, 1 stroke), u16 opCount, opCount op bytes
 (0=M 1=L 2=Q 3=C 4=Z), then varint coordinates for all ops in order.
 """
 import math, re, struct, sys, os, xml.etree.ElementTree as ET
 
-# (name used by Icons.java, material symbol, filled?)  -- ORDER MUST MATCH the id constants in Icons.java
+# (name used by Icons.java, lucide icon)  -- ORDER MUST MATCH the id constants in Icons.java
 SPEC = [
-    ("FOLDER", "folder", 1), ("FILE", "draft", 1), ("IMAGE", "image", 1), ("VIDEO", "movie", 1), ("AUDIO", "music_note", 1),
-    ("APK", "android", 1), ("DOC", "description", 1), ("HTML", "html", 0), ("ZIP", "folder_zip", 1), ("PDF", "picture_as_pdf", 1),
-    ("USB", "usb", 0), ("TV", "tv", 1), ("SEARCH", "search", 0), ("SORT", "sort", 0), ("NEWFOLDER", "create_new_folder", 1),
-    ("BACK", "arrow_back", 0), ("SWAP", "swap_horiz", 0), ("INSTALL", "download", 0), ("TUNE", "palette", 1), ("INFO", "info", 1),
-    ("HEART", "favorite", 1), ("SHIELD", "verified_user", 1), ("CODE", "code", 0), ("GLOBE", "public", 0), ("CHECK", "check", 0),
-    ("COPY", "content_copy", 1), ("CUT", "content_cut", 0), ("PASTE", "content_paste", 1), ("TRASH", "delete", 1), ("EDIT", "edit", 1),
-    ("SHARE", "share", 1), ("WIFI", "wifi", 0), ("REFRESH", "refresh", 0), ("CLOSE", "close", 0), ("MORE", "more_vert", 0),
-    ("PLAY", "play_arrow", 1), ("UP", "arrow_upward", 0), ("HOME", "home", 1), ("SELECT", "checklist", 0), ("STOP", "stop", 1),
-    ("UPLOAD", "upload", 0), ("CHEVRON", "chevron_right", 0), ("PAUSE", "pause", 1), ("PREV", "skip_previous", 1), ("NEXT", "skip_next", 1),
-    ("WARN", "warning", 1), ("CHECKED", "check_circle", 1), ("ERROR", "error", 1), ("EYE", "visibility", 1), ("EYE_OFF", "visibility_off", 1),
-    ("STORAGE", "hard_drive", 1), ("FOLDER_OPEN", "folder_open", 1), ("CPU", "memory", 1), ("PACKAGE", "inventory_2", 1),
-    ("GRID", "grid_view", 1), ("LIST", "view_list", 1), ("GEAR", "settings", 1),
+    ("FOLDER", "folder"), ("FILE", "file"), ("IMAGE", "image"), ("VIDEO", "film"), ("AUDIO", "music"),
+    ("APK", "app-window"), ("DOC", "file-text"), ("HTML", "file-code"), ("ZIP", "file-archive"), ("PDF", "file-type"),
+    ("USB", "usb"), ("TV", "tv"), ("SEARCH", "search"), ("SORT", "arrow-up-down"), ("NEWFOLDER", "folder-plus"),
+    ("BACK", "arrow-left"), ("SWAP", "arrow-left-right"), ("INSTALL", "download"), ("TUNE", "palette"), ("INFO", "info"),
+    ("HEART", "heart"), ("SHIELD", "shield-check"), ("CODE", "code-xml"), ("GLOBE", "globe"), ("CHECK", "check"),
+    ("COPY", "copy"), ("CUT", "scissors"), ("PASTE", "clipboard-paste"), ("TRASH", "trash-2"), ("EDIT", "pencil"),
+    ("SHARE", "share-2"), ("WIFI", "wifi"), ("REFRESH", "refresh-cw"), ("CLOSE", "x"), ("MORE", "ellipsis-vertical"),
+    ("PLAY", "play"), ("UP", "arrow-up"), ("HOME", "house"), ("SELECT", "list-checks"), ("STOP", "square"),
+    ("UPLOAD", "upload"), ("CHEVRON", "chevron-right"), ("PAUSE", "pause"), ("PREV", "skip-back"), ("NEXT", "skip-forward"),
+    ("WARN", "triangle-alert"), ("CHECKED", "circle-check"), ("ERROR", "circle-alert"), ("EYE", "eye"), ("EYE_OFF", "eye-off"),
+    ("STORAGE", "hard-drive"), ("FOLDER_OPEN", "folder-open"), ("CPU", "cpu"), ("PACKAGE", "package"),
+    ("GRID", "layout-grid"), ("LIST", "list"), ("GEAR", "settings"),
     # 1.3 additions
-    ("FOLDER_LINE", "folder", 0), ("DOWNLOADS", "download", 0), ("PICTURES", "photo_library", 1), ("MOVIES", "video_library", 1),
-    ("MUSIC", "library_music", 1), ("DOCUMENTS", "article", 1), ("INBOX", "move_to_inbox", 1), ("QR", "qr_code_2", 0),
-    ("LINK", "link", 0), ("DEVICES", "devices", 1), ("HISTORY", "history", 0), ("STAR", "star", 1), ("ADD", "add", 0),
-    ("SD", "sd_card", 1), ("WIFI_OFF", "wifi_off", 0), ("POWER", "power_settings_new", 0), ("LOCK", "lock", 1), ("DARK", "dark_mode", 1),
-    ("CONTRAST", "contrast", 0), ("AUDIOFILE", "audio_file", 1), ("VIDEOFILE", "video_file", 1), ("SPECIAL", "folder_special", 1),
-    ("INSTALL_FILL", "download", 1), ("SYNC", "sync_alt", 0), ("UPLOAD_CLOUD", "cloud_upload", 1), ("DOWNLOAD_CLOUD", "cloud_download", 1),
-    ("SELECT_ALL", "select_all", 0), ("MOVE", "drive_file_move", 1), ("APPS", "apps", 0), ("OPEN_NEW", "open_in_new", 0),
-    ("DONE_ALL", "done_all", 0), ("SCHEDULE", "schedule", 0), ("BOLT", "bolt", 1), ("EXPAND", "keyboard_arrow_down", 0),
+    ("FOLDER_LINE", "folder"), ("DOWNLOADS", "folder-down"), ("PICTURES", "images"), ("MOVIES", "clapperboard"),
+    ("MUSIC", "disc-3"), ("DOCUMENTS", "files"), ("INBOX", "inbox"), ("QR", "qr-code"),
+    ("LINK", "link"), ("DEVICES", "monitor-smartphone"), ("HISTORY", "history"), ("STAR", "star"), ("ADD", "plus"),
+    ("SD", "memory-stick"), ("WIFI_OFF", "wifi-off"), ("POWER", "power"), ("LOCK", "lock"), ("DARK", "moon"),
+    ("CONTRAST", "contrast"), ("AUDIOFILE", "file-audio"), ("VIDEOFILE", "file-video"), ("SPECIAL", "folder-heart"),
+    ("INSTALL_FILL", "download"), ("SYNC", "repeat"), ("UPLOAD_CLOUD", "cloud-upload"), ("DOWNLOAD_CLOUD", "cloud-download"),
+    ("SELECT_ALL", "box-select"), ("MOVE", "folder-input"), ("APPS", "grid-2x2"), ("OPEN_NEW", "external-link"),
+    ("DONE_ALL", "check-check"), ("SCHEDULE", "clock"), ("BOLT", "zap"), ("EXPAND", "chevron-down"),
 ]
 
 TOK = re.compile(r"([MmLlHhVvCcSsQqTtAaZz])|(-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)")
@@ -89,7 +90,7 @@ def parse_path(d):
     def flag():  # arc flags may be glued: "a8,8,0,0,1-8" or "0 01"
         nonlocal i
         t = toks[i][1]
-        if len(t) > 1 and t[0] in "01" and not t.startswith(("0.", "1.")):
+        if len(t) > 1:   # flags are one digit, so "01.471" is flag 0, flag 1, then .471
             toks[i] = (None, t[1:]); return float(t[0])
         i += 1; return float(t)
 
@@ -148,8 +149,8 @@ Q = 16  # fixed point
 
 def encode(ls):
     out = bytearray([len(ls)])
-    for alpha, ops in ls:
-        out += bytes([alpha]) + struct.pack(">H", len(ops)) + bytes(OPN[o[0]] for o in ops)
+    for alpha, style, ops in ls:
+        out += bytes([alpha, style]) + struct.pack(">H", len(ops)) + bytes(OPN[o[0]] for o in ops)
         px = py = 0
         for o in ops:
             v = o[1:]
@@ -160,28 +161,52 @@ def encode(ls):
 
 
 
+def f(el, k, d=0.0):
+    return float(el.get(k, d))
+
+
+def prim_path(el):
+    """SVG primitive -> path data string."""
+    t = el.tag.split("}")[1]
+    if el.get("transform"): raise ValueError("transform not supported")
+    if t == "path": return el.get("d")
+    if t == "line": return "M%g %gL%g %g" % (f(el, "x1"), f(el, "y1"), f(el, "x2"), f(el, "y2"))
+    if t in ("polyline", "polygon"):
+        n = [float(v) for v in re.findall(r"-?[\d.]+", el.get("points"))]
+        d = "M%g %g" % (n[0], n[1]) + "".join("L%g %g" % (n[j], n[j + 1]) for j in range(2, len(n), 2))
+        return d + ("Z" if t == "polygon" else "")
+    if t in ("circle", "ellipse"):
+        cx, cy = f(el, "cx"), f(el, "cy"); rx = f(el, "r") if t == "circle" else f(el, "rx"); ry = rx if t == "circle" else f(el, "ry")
+        return "M%g %gA%g %g 0 1 0 %g %gA%g %g 0 1 0 %g %gZ" % (cx - rx, cy, rx, ry, cx + rx, cy, rx, ry, cx - rx, cy)
+    if t == "rect":
+        x, y, w, h = f(el, "x"), f(el, "y"), f(el, "width"), f(el, "height")
+        rx = f(el, "rx", el.get("ry", 0)); ry = f(el, "ry", rx)
+        if not rx and not ry: return "M%g %gH%gV%gH%gZ" % (x, y, x + w, y + h, x)
+        return ("M%g %gH%gA%g %g 0 0 1 %g %gV%gA%g %g 0 0 1 %g %gH%gA%g %g 0 0 1 %g %gV%gA%g %g 0 0 1 %g %gZ" %
+                (x + rx, y, x + w - rx, rx, ry, x + w, y + ry, y + h - ry, rx, ry, x + w - rx, y + h, x + rx, rx, ry, x, y + h - ry, y + ry, rx, ry, x + rx, y))
+    raise ValueError("unsupported element " + t)
+
+
 def layers(svgfile):
     root = ET.parse(svgfile).getroot()
     out = []
     for el in root:
-        if el.tag.split("}")[1] != "path": raise ValueError("unsupported element in " + svgfile)
-        for o in parse_path(el.get("d")):
+        for o in parse_path(prim_path(el)):
             if o[0] == "Z": out.append(o); continue
             v = o[1:]; pts = []
-            for j in range(0, len(v), 2): pts += [v[j] * 256 / 960, (v[j + 1] + 960) * 256 / 960]
+            for j in range(0, len(v), 2): pts += [v[j] * 256 / 24, v[j + 1] * 256 / 24]
             out.append((o[0],) + tuple(pts))
-    return [(255, out)]
+    return [(255, 1, out)]
 
 
 def main():
     src = sys.argv[1]; dst = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(__file__), "..", "assets", "icons.bin")
     blob = struct.pack(">H", len(SPEC))
-    for name, sym, fill in SPEC:
-        f = os.path.join(src, sym + ("-fill" if fill else "") + ".svg")
-        blob += encode(layers(f))
+    for name, ic in SPEC:
+        blob += encode(layers(os.path.join(src, ic + ".svg")))
     open(dst, "wb").write(blob)
     print("icons:", len(SPEC), "bytes:", len(blob), "->", dst)
-    for i, (name, sym, fill) in enumerate(SPEC): print("%s=%d" % (name, i), end=", ")
+    for i, (name, ic) in enumerate(SPEC): print("%s=%d" % (name, i), end=", ")
     print()
 
 

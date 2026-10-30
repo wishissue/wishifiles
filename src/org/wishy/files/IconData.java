@@ -8,9 +8,9 @@ import java.io.InputStream;
 final class IconData {
     static final int M = 0, L = 1, Q = 2, C = 3, Z = 4;
 
-    static final class Layer { int alpha; byte[] ops; float[] pts; }
+    static final class Layer { int alpha; boolean stroke; byte[] ops; float[] pts; }
 
-    /** icons[i] = the filled layers of icon i, bottom layer first. */
+    /** icons[i] = the layers of icon i, bottom layer first. Each layer is filled or stroked (Lucide icons are strokes). */
     static Layer[][] read(InputStream is) throws IOException {
         DataInputStream d = new DataInputStream(is);
         int n = d.readUnsignedShort();
@@ -20,6 +20,7 @@ final class IconData {
             for (int k = 0; k < ls.length; k++) {
                 Layer l = new Layer();
                 l.alpha = d.readUnsignedByte();
+                l.stroke = d.readUnsignedByte() == 1;
                 l.ops = new byte[d.readUnsignedShort()];
                 d.readFully(l.ops);
                 int np = 0;

@@ -23,6 +23,7 @@ public class FilesScreen extends Screen {
     static final ArrayList<File> CLIP = new ArrayList<File>(); static boolean clipCut;
 
     private File cwd; private final File start; private final Picker picker;
+    private String pickTitle = "Choose a file to share"; private String[] accept;   // picker mode: heading, and the MIME types the caller can take
     private final ArrayList<Entry> items = new ArrayList<Entry>();          // files (or everything, in search results)
     private final ArrayList<Prio.Item> folders = new ArrayList<Prio.Item>();
     private final HashMap<File, Tiles.Tile> tiles = new HashMap<File, Tiles.Tile>();
@@ -36,11 +37,21 @@ public class FilesScreen extends Screen {
 
     public FilesScreen(File start, Picker p) { this.start = start; this.picker = p; cwd = start; }
 
+    /** Picker for another app: own heading and an optional MIME filter (null or empty = anything). */
+    public FilesScreen(File start, Picker p, String title, String[] accept) { this(start, p); this.pickTitle = title; this.accept = accept; }
+
+    /** Picker mode only: does this file match what the calling app asked for? Tells the person when it doesn't. */
+    private boolean pickOk(File f) {
+        if (MimeMatch.ok(accept, FileOps.mime(f))) return true;
+        UI.toast("That's not the kind of file the other app asked for");
+        return false;
+    }
+
     // ------------------------------------------------------------------ build
     @Override View build() {
         sortBy = Theme.prefs().getInt("sortBy", 0); desc = Theme.prefs().getBoolean("sortDesc", false); hidden = Theme.prefs().getBoolean("hidden", false);
         byPrio = Theme.prefs().getBoolean("prio", true);
-        page = new UI.Page(picker != null ? "Choose a file to share" : "Files", new UI.Act() { @Override public void run() { if (!onBack()) a.pop(); } });
+        page = new UI.Page(picker != null ? pickTitle : "Files", new UI.Act() { @Override public void run() { if (!onBack()) a.pop(); } });
         int g = UI.grow();
         LinearLayout c = UI.vbox(); c.setPadding(g, g, g, 0);
 
@@ -465,7 +476,7 @@ public class FilesScreen extends Screen {
                 list.setSelection(0);
             }
         }).start();
-        String name = dir == null ? (picker != null ? "Choose a file to share" : "Files") : dir.getName().length() == 0 ? "Files" : dir.getName();
+        String name = dir == null ? (picker != null ? pickTitle : "Files") : dir.getName().length() == 0 ? "Files" : dir.getName();
         if (dir != null) for (Storage.Root r : Storage.roots()) if (r.dir.equals(dir)) name = r.name.split("  \u00b7  ")[0];
         page.setTitle(name);
     }
@@ -483,7 +494,7 @@ public class FilesScreen extends Screen {
             return;
         }
         if (searching) page.setTitle("Search");
-        else if (cwd == null) page.setTitle(picker != null ? "Choose a file to share" : "Files");
+        else if (cwd == null) page.setTitle(picker != null ? pickTitle : "Files");
         else { String n = cwd.getName(); for (Storage.Root r : Storage.roots()) if (r.dir.equals(cwd)) n = r.name.split("  \u00b7  ")[0]; page.setTitle(n.length() == 0 ? "Files" : n); }
         page.actions.addView(UI.barBtn(Icons.SEARCH, new UI.Act() { @Override public void run() { search(); } }));
         if (cwd != null || searching) {
@@ -517,7 +528,7 @@ public class FilesScreen extends Screen {
     private void click(Entry e) {
         if (!sel.isEmpty()) { toggle(e.f); return; }
         if (e.type == FileOps.T_FOLDER) { go(e.f, null, true); return; }
-        if (picker != null) { picker.pick(e.f); a.pop(); return; }
+        if (picker != null) { if (pickOk(e.f)) { picker.pick(e.f); a.pop(); } return; }
         open(e.f);
     }
 
@@ -574,7 +585,7 @@ public class FilesScreen extends Screen {
         int[] ic = new int[I.size()]; for (int k = 0; k < ic.length; k++) ic[k] = I.get(k);
         Dlg.menu(f.getName(), L.toArray(new String[0]), ic, new Dlg.Pick() { @Override public void picked(int k) {
             String s = L.get(k);
-            if (s.equals("Open")) { if (dir) go(f, tiles.get(f), true); else if (picker != null) { picker.pick(f); a.pop(); } else open(f); }
+            if (s.equals("Open")) { if (dir) go(f, tiles.get(f), true); else if (picker != null) { if (pickOk(f)) { picker.pick(f); a.pop(); } } else open(f); }
             else if (s.startsWith("Inspect")) a.push(new InstallScreen(f));
             else if (s.equals("Select") || s.equals("Deselect")) toggle(f);
             else if (s.equals("Copy")) { sel.clear(); sel.add(f); clip(false); }

@@ -27,9 +27,17 @@ public class MainActivity extends Activity {
         root.setClipChildren(false);
         root.setBackgroundColor(Theme.c(Theme.BG));
         setContentView(root);
-        push(new HomeScreen());
-        handleIntent(getIntent());
+        start(getIntent());
     }
+
+    /** First screen(s). The file picker (PickerActivity) overrides this to open straight into the chooser. */
+    protected void start(Intent i) {
+        push(new HomeScreen());
+        handleIntent(i);
+    }
+
+    /** Only the main window may stop the transfer server when it closes; a short-lived picker must not. */
+    protected boolean ownsServer() { return true; }
 
     /** Edge-to-edge, no system bars, drawn into display cutouts. */
     private void fullScreen() {
@@ -129,11 +137,11 @@ public class MainActivity extends Activity {
 
     @Override protected void onPause() { super.onPause(); if (!stack.isEmpty()) top().onHide(); }
 
-    @Override protected void onResume() { super.onResume(); if (!stack.isEmpty()) top().onShow(); }
+    @Override protected void onResume() { super.onResume(); App.ctx = this; if (!stack.isEmpty()) top().onShow(); }
 
-    @Override public void onRequestPermissionsResult(int c, String[] p, int[] r) { rebuild(); }
+    @Override public void onRequestPermissionsResult(int c, String[] p, int[] r) { rebuild(); Storage.afterRuntime(this); }
 
-    @Override protected void onDestroy() { super.onDestroy(); if (isFinishing()) TransferScreen.stopAll(); }
+    @Override protected void onDestroy() { super.onDestroy(); if (isFinishing() && ownsServer()) TransferScreen.stopAll(); }
 
     void open(String url) {
         try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); }

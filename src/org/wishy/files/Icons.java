@@ -7,7 +7,7 @@ import android.graphics.Path;
 import android.view.View;
 
 /**
- * Icons are Material Symbols Rounded (Apache-2.0, fonts.google.com/icons): filled glyphs for objects, outline glyphs for actions. They are stored as flattened
+ * Icons are Lucide (ISC, lucide.dev): one consistent 2-unit round stroke for objects and actions alike. They are stored as flattened
  * vector paths in assets/icons.bin (built by tools/build_icons.py) and drawn with Canvas, so there are no bitmaps to scale or bundle.
  * The order of the ids below must match SPEC in that script.
  */
@@ -23,6 +23,21 @@ public final class Icons {
             CONTRAST = 75, AUDIOFILE = 76, VIDEOFILE = 77, SPECIAL = 78, INSTALL_FILL = 79, SYNC = 80, UPLOAD_CLOUD = 81,
             DOWNLOAD_CLOUD = 82, SELECT_ALL = 83, MOVE = 84, APPS = 85, OPEN_NEW = 86, DONE_ALL = 87, SCHEDULE = 88, BOLT = 89, EXPAND = 90;
 
+    /** Spoken/tooltip name for an icon used on its own, without a visible label. */
+    public static String label(int id) {
+        switch (id) {
+            case BACK: return "Back"; case SEARCH: return "Search"; case SORT: return "Sort";
+            case NEWFOLDER: return "New folder"; case COPY: return "Copy"; case CUT: return "Cut";
+            case TRASH: return "Delete"; case CLOSE: return "Close"; case MORE: return "More options";
+            case GRID: return "Switch to grid view"; case LIST: return "Switch to list view";
+            case PASTE: return "Paste"; case EDIT: return "Rename"; case SHARE: return "Share";
+            case REFRESH: return "Refresh"; case SELECT_ALL: return "Select all"; case INFO: return "Details";
+            default: return null;
+        }
+    }
+
+    /** Stroke weight of the icon set, in the 256-unit icon grid. */
+    static final float STROKE = 256f / 24f * 2f;
     private static final Paint P = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static IconData.Layer[][] data;
     private static Path[][] paths;
@@ -72,10 +87,13 @@ public final class Icons {
         c.translate(x, y);
         float s = size / 256f;
         c.scale(s, s);
-        P.setStyle(Paint.Style.FILL);
         int base = color >>> 24;
         for (int k = 0; k < ps.length; k++) {
             P.setColor((color & 0xFFFFFF) | ((base * ls[k].alpha / 255) << 24));
+            if (ls[k].stroke) {
+                // Lucide: 2 units on a 24 grid = 21.33 on this 256 grid, round caps and joins
+                P.setStyle(Paint.Style.STROKE); P.setStrokeWidth(STROKE); P.setStrokeCap(Paint.Cap.ROUND); P.setStrokeJoin(Paint.Join.ROUND);
+            } else P.setStyle(Paint.Style.FILL);
             c.drawPath(ps[k], P);
         }
         c.restore();
